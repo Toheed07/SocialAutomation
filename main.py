@@ -16,7 +16,16 @@ from io import BytesIO
 import textwrap
 import os
 from uuid import uuid4
+
+import glob
+import time
+
+from fastapi.staticfiles import StaticFiles
+
+
 app = FastAPI()
+
+app.mount("/instagram_images", StaticFiles(directory="instagram_images"), name="instagram_images")
 
 # Define the path to save the images
 SAVE_PATH = "instagram_images"
@@ -28,6 +37,17 @@ class ImageRequest(BaseModel):
     banner_text: str
     description_text: str
     footer_text: str
+
+
+def manage_image_storage(save_path, max_images=5):
+
+    # Get a list of all images in the folder sorted by modification time
+    images = sorted(glob.glob(os.path.join(save_path, "*.jpg")), key=os.path.getmtime)
+    
+    # Delete oldest images if more than max_images exist
+    while len(images) > max_images:
+        oldest_image = images.pop(0)
+        os.remove(oldest_image)
 
 @app.post("/create_instagram_image/")
 async def create_instagram_image(request: ImageRequest):
@@ -96,7 +116,15 @@ async def create_instagram_image(request: ImageRequest):
         image_filename = f"{SAVE_PATH}/{image_id}.jpg"
         new_img.save(image_filename, quality=95)
 
-        return {"message": "Image created successfully", "image_path": image_filename}
+        # Manage image storage (ensure max 30 images in the folder)
+        manage_image_storage(SAVE_PATH, max_images=5)
+
+        # Construct the URL for the saved image
+        # image_url = f"http://localhost:8000/instagram_images/{image_id}.jpg"
+        image_url = f"https://socialautomation.onrender.com/instagram_images/{image_id}.jpg"
+
+        return {"message": "Image created successfully", "image_url": image_url}
+
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
