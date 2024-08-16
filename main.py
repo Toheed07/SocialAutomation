@@ -25,11 +25,12 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
-app.mount("/instagram_images", StaticFiles(directory="instagram_images"), name="instagram_images")
-
 # Define the path to save the images
 SAVE_PATH = "instagram_images"
 os.makedirs(SAVE_PATH, exist_ok=True)
+
+app.mount("/instagram_images", StaticFiles(directory="instagram_images"), name="instagram_images")
+
 
 # Define a Pydantic model for the request body
 class ImageRequest(BaseModel):
@@ -39,7 +40,7 @@ class ImageRequest(BaseModel):
     footer_text: str
 
 
-def manage_image_storage(save_path, max_images=5):
+def manage_image_storage(save_path, max_images=30):
 
     # Get a list of all images in the folder sorted by modification time
     images = sorted(glob.glob(os.path.join(save_path, "*.jpg")), key=os.path.getmtime)
@@ -117,7 +118,7 @@ async def create_instagram_image(request: ImageRequest):
         new_img.save(image_filename, quality=95)
 
         # Manage image storage (ensure max 30 images in the folder)
-        manage_image_storage(SAVE_PATH, max_images=5)
+        manage_image_storage(SAVE_PATH, max_images=30)
 
         # Construct the URL for the saved image
         # image_url = f"http://localhost:8000/instagram_images/{image_id}.jpg"
