@@ -125,7 +125,6 @@ async def create_instagram_image(request: ImageRequest):
 
         return {"message": "Image created successfully", "image_url": image_url}
 
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
